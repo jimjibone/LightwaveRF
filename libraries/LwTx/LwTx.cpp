@@ -1,7 +1,7 @@
 // LwTx.cpp
 //
 // LightwaveRF 434MHz tx interface for Arduino
-// 
+//
 // Author: Bob Tidey (robert@tideys.net)
 
 #include "LwTx.h"
@@ -28,7 +28,7 @@ static byte tx_buf[tx_msglen]; // the message buffer during reception
 static byte tx_repeat = 0; //counter for repeats
 static byte tx_state = 0;
 static byte tx_toggle_count = 3;
-static uint16_t tx_gap_repeat = 0;	//unsigned int
+static uint16_t tx_gap_repeat = 0;  //unsigned int
 
 // These set the pulse durations in ticks
 static byte tx_low_count = 7; // total number of ticks in a low (980 uSec)
@@ -39,7 +39,7 @@ static byte tx_gap_count = 72; // Inter-message gap count (10.8 msec)
 //Gap multiplier byte is used to multiply gap if longer periods are needed for experimentation
 //If gap is 255 (35msec) then this to give a max of 9 seconds
 //Used with low repeat counts to find if device times out
-static byte tx_gap_multiplier = 0; //Gap extension byte 
+static byte tx_gap_multiplier = 0; //Gap extension byte
 
 static const byte tx_state_idle = 0;
 static const byte tx_state_msgstart = 1;
@@ -50,7 +50,7 @@ static const byte tx_state_gapstart = 5;
 static const byte tx_state_gapend = 6;
 
 static byte tx_bit_mask = 0; // bit mask in current byte
-static byte tx_num_bytes = 0; // number of bytes sent 
+static byte tx_num_bytes = 0; // number of bytes sent
 
 /**
   Set translate mode
@@ -117,7 +117,7 @@ void isrTXtimer() {
        case tx_state_gapend:
          tx_repeat++;
          if(tx_repeat >= tx_repeats) {
-           //disable timer nterrupt
+           //disable timer interrupt
            lw_timer_Stop();
            tx_msg_active = false;
            tx_state = tx_state_idle;
@@ -182,42 +182,42 @@ void lwtx_cmd(byte command, byte parameter, byte room, byte device) {
 **/
 void lwtx_setup(int pin, byte repeats, byte invert, int period) {
 #if EEPROM_EN
-	for(int i=0; i<5; i++) {
-	  tx_buf[i+4] = EEPROM.read(EEPROMaddr+i);
-	}
+  for(int i=0; i<5; i++) {
+    tx_buf[i+4] = EEPROM.read(EEPROMaddr+i);
+  }
 #endif
-	if(pin !=0) {
-		tx_pin = pin;
-	}
-	pinMode(tx_pin,OUTPUT);
-	digitalWrite(tx_pin, txoff);
-	
-	if(repeats > 0 && repeats < 40) {
-	 tx_repeats = repeats;
-	}
-	if(invert != 0) {
-	 txon = 0;
-	 txoff = 1;
-	} else {
-	 txon = 1;
-	 txoff = 0;
-	}
-	
-	int period1;
-	if (period > 32 && period < 1000) {
-		period1 = period; 
-	} else {
-		//default 140 uSec
-		period1 = 140;
-	}
-	lw_timer_Setup(isrTXtimer, period1);
+  if(pin !=0) {
+    tx_pin = pin;
+  }
+  pinMode(tx_pin,OUTPUT);
+  digitalWrite(tx_pin, txoff);
+
+  if(repeats > 0 && repeats < 40) {
+   tx_repeats = repeats;
+  }
+  if(invert != 0) {
+   txon = 0;
+   txoff = 1;
+  } else {
+   txon = 1;
+   txoff = 0;
+  }
+
+  int period1;
+  if (period > 32 && period < 1000) {
+    period1 = period;
+  } else {
+    //default 140 uSec
+    period1 = 140;
+  }
+  lw_timer_Setup(isrTXtimer, period1);
 }
 
 void lwtx_setTickCounts( byte lowCount, byte highCount, byte trailCount, byte gapCount) {
-	tx_low_count = lowCount;
-	tx_high_count = highCount;
-	tx_trail_count = trailCount;
-	tx_gap_count = gapCount;
+  tx_low_count = lowCount;
+  tx_high_count = highCount;
+  tx_trail_count = trailCount;
+  tx_gap_count = gapCount;
 }
 
 void lwtx_setGapMultiplier(byte gapMultiplier) {
@@ -233,24 +233,45 @@ extern void lwtx_setEEPROMaddr(int addr) {
 
 // There are 3 timer support routines. Variants of these may be placed here to support different environments
 void (*isrRoutine) ();
-#if defined(SPARK_CORE)
+#if defined(RASPI)
+int isrPeriod = 0;
+bool isrRunning = false;
+extern void lw_timer_Setup(void (*isrCallback)(), int period) {
+  isrRoutine = isrCallback;
+  isrPeriod = period;
+}
+extern void lw_timer_Start() {
+  isrRunning = true;
+}
+extern void lw_timer_Stop() {
+  isrRunning = false;
+}
+extern void lw_timer_exec() {
+  while (isrRunning == true)
+  {
+    (*isrRoutine)();
+    delayMicroseconds(isrPeriod);
+  }
+}
+
+#elif defined(SPARK_CORE)
 //#include "SparkIntervalTimer.h"
 //reference for library when imported in Spark IDE
 #include "SparkIntervalTimer/SparkIntervalTimer.h"
 IntervalTimer txmtTimer;
 
 extern void lw_timer_Setup(void (*isrCallback)(), int period) {
-	isrRoutine = isrCallback;
-	noInterrupts();
-	txmtTimer.begin(isrRoutine, period, uSec);	//set IntervalTimer interrupt at period uSec (default 140)
-	txmtTimer.interrupt_SIT(INT_DISABLE); // initialised as off, first message starts it
-	interrupts();
+  isrRoutine = isrCallback;
+  noInterrupts();
+  txmtTimer.begin(isrRoutine, period, uSec);  //set IntervalTimer interrupt at period uSec (default 140)
+  txmtTimer.interrupt_SIT(INT_DISABLE); // initialised as off, first message starts it
+  interrupts();
 }
 extern void lw_timer_Start() {
-	txmtTimer.interrupt_SIT(INT_ENABLE);
+  txmtTimer.interrupt_SIT(INT_ENABLE);
 }
 extern void lw_timer_Stop() {
-	txmtTimer.interrupt_SIT(INT_DISABLE);
+  txmtTimer.interrupt_SIT(INT_DISABLE);
 }
 
 #elif defined(DUE)
@@ -258,57 +279,57 @@ extern void lw_timer_Stop() {
 DueTimer txmtTimer = DueTimer::DueTimer(0);
 boolean dueDefined = false;
 extern void lw_timer_Setup(void (*isrCallback)(), int period) {
-	if (!dueDefined) {
-		txmtTimer = DueTimer::getAvailable();
-		dueDefined = true;
-	}
-	isrRoutine = isrCallback;
-	noInterrupts();
-	txmtTimer.attachInterrupt(isrCallback);
-	txmtTimer.setPeriod(period);
-	interrupts();
+  if (!dueDefined) {
+    txmtTimer = DueTimer::getAvailable();
+    dueDefined = true;
+  }
+  isrRoutine = isrCallback;
+  noInterrupts();
+  txmtTimer.attachInterrupt(isrCallback);
+  txmtTimer.setPeriod(period);
+  interrupts();
 }
 extern void lw_timer_Start() {
-	txmtTimer.start();
+  txmtTimer.start();
 }
 
 extern void lw_timer_Stop() {
-	txmtTimer.stop();
+  txmtTimer.stop();
 }
 #else
 //Default case is Arduino Mega328 which uses the TIMER2
 extern void lw_timer_Setup(void (*isrCallback)(), int period) {
-	isrRoutine = isrCallback; // unused here as callback is direct
-	byte clock = (period / 4) - 1;;
-	cli();//stop interrupts
-	//set timer2 interrupt at  clock uSec (default 140)
-	TCCR2A = 0;// set entire TCCR2A register to 0
-	TCCR2B = 0;// same for TCCR2B
-	TCNT2  = 0;//initialize counter value to 0
-	// set compare match register for clock uSec
-	OCR2A = clock;// = 16MHz Prescale to 4 uSec * (counter+1)
-	// turn on CTC mode
-	TCCR2A |= (1 << WGM21);
-	// Set CS11 bit for 64 prescaler
-	TCCR2B |= (1 << CS22);   
-	// disable timer compare interrupt
-	TIMSK2 &= ~(1 << OCIE2A);
-	sei();//enable interrupts
+  isrRoutine = isrCallback; // unused here as callback is direct
+  byte clock = (period / 4) - 1;;
+  cli();//stop interrupts
+  //set timer2 interrupt at  clock uSec (default 140)
+  TCCR2A = 0;// set entire TCCR2A register to 0
+  TCCR2B = 0;// same for TCCR2B
+  TCNT2  = 0;//initialize counter value to 0
+  // set compare match register for clock uSec
+  OCR2A = clock;// = 16MHz Prescale to 4 uSec * (counter+1)
+  // turn on CTC mode
+  TCCR2A |= (1 << WGM21);
+  // Set CS11 bit for 64 prescaler
+  TCCR2B |= (1 << CS22);
+  // disable timer compare interrupt
+  TIMSK2 &= ~(1 << OCIE2A);
+  sei();//enable interrupts
 }
 
 extern void lw_timer_Start() {
    //enable timer 2 interrupts
-	TIMSK2 |= (1 << OCIE2A);
+  TIMSK2 |= (1 << OCIE2A);
 }
 
 extern void lw_timer_Stop() {
-	//disable timer 2 interrupt
-	TIMSK2 &= ~(1 << OCIE2A);
+  //disable timer 2 interrupt
+  TIMSK2 &= ~(1 << OCIE2A);
 }
 
 //Hand over to real isr
 ISR(TIMER2_COMPA_vect){
-	isrTXtimer();
+  isrTXtimer();
 }
 
 #endif

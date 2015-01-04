@@ -1,20 +1,28 @@
 // LxTx.h
 //
 // LightwaveRF 434MHz tx interface for Arduino
-// 
+//
 // Author: Bob Tidey (robert@tideys.net)
 //Choose environment to compile for. Only one should be defined
 //For SparkCore the SparkIntervalTimer Library code needs to be present
 //For Due the DueTimer library code needs to be present
 //#define SPARK_CORE 1
 //#define DUE 1
-#define AVR328 1
+//#define AVR328 1
+#define RASPI 1
 
 //Choose whether to include EEPROM support, comment or set to 0 to disable, 1 use with library support, 2 use with native support
-#define EEPROM_EN 1
+//#define EEPROM_EN 1
 
 //Include basic library header and set default TX pin
-#ifdef SPARK_CORE
+#ifdef RASPI
+#include <wiringPi.h>
+#include <stdint.h>
+#include <string.h>
+#define TX_PIN_DEFAULT 3
+#define boolean bool
+#define byte uint8_t
+#elif SPARK_CORE
 #include "application.h"
 #define TX_PIN_DEFAULT D3
 #elif DUE
@@ -69,3 +77,7 @@ void lw_timer_Start();
 
 //Allws multiplying the gap period for creating very large gaps
 void lw_timer_Stop();
+
+#ifdef RASPI
+void lw_timer_exec();
+#endif
