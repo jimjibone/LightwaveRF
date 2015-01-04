@@ -51,11 +51,13 @@ To start off, make sure you have wiringPi installed, then run `make` in the repo
 
 Two programs will be created:
 
-### lwtx
+### LwTx
 
-The library used for this, LightwaveTX.{cpp,h}, is based on [lawrie's](https://github.com/lawrie/LightwaveRF) library. Out of the two libraries, this was the best for transmitting using the Raspberry Pi during tests. It's transmission implementation is much simpler than roberttideys and doesn't require the use of hardware timers.
+Originally, I based my TX library on [lawrie's](https://github.com/lawrie/LightwaveRF) library. Out of the two libraries, this was the best for transmitting using the Raspberry Pi during initial tests. It's transmission implementation is much simpler than roberttideys and didn't require the use of hardware timers.
 
-The `lwtx` executable is pretty much the classic blink example, using a real light rather than an LED. To run this use `sudo ./lwtx`. `sudo` is required by wiringPi to access the GPIO pins on the Raspberry Pi.
+Now I have switched to only use roberttideys version of the libraries, and from initial tests it appears to work much better. It now also means that the TX and RX libraries originate from the same source which is always good.
+
+The `RaspiTests/LwTxTest.cpp` executable is pretty much the classic blink example, using a real light rather than an LED. To run this, build the program using `make`, then run `sudo ./LwTxTest`. `sudo` is required by wiringPi to access the GPIO pins on the Raspberry Pi.
 
 You may need to pair your device with the code that is running. If you look at the example code, `lwtx.cpp`, you will see that the device ID is hard coded at the top of the file. To pair, just follow the instructions that came with your device and make sure that you time it with the code sending the ON command. If you enable pairing mode on the device and then run the program, the first message that is sent contains the ON command.
 
@@ -63,12 +65,12 @@ You can change the ID to anything you like, as long as you stick to this selecti
 
 See [roberttidey's excellent write up of the protocol](https://github.com/roberttidey/LightwaveRF/blob/master/LightwaveRF433.pdf) for more information.
 
-### lwrx
+### LwRx
 
 The library used for this, LightwaveRX.{cpp,h}, is based on [roberttidey's](https://github.com/roberttidey/LightwaveRF/) library. Out of the two libraries, as you can probably guess by now, this was the best for receiving, on both the Raspberry Pi and Arduino. However, the original library contains a load of EEPROM and pairing support, which just seems silly to me, these deserve to be in a separate set of files. So, I just stripped that out.
+
+NOTE: The Raspberry Pi example program will be added shortly. The code is done, just needs adding to the project!
 
 The `lwrx` executable just runs in an infinite loop, waiting for some action from the 433 MHz receiver. The receivers signal pin is set up as an interrupt using the wiringPi library, and through a timer based state-machine the message is decoded into its byte representation.
 
 Again, see [roberttidey's excellent write up of the protocol](https://github.com/roberttidey/LightwaveRF/blob/master/LightwaveRF433.pdf) for more information.
-
-Eventually additional functions will be added which will convert the output messages into a more understandable form, e.g. spelling out the command that was sent, dim level requested, etc.
