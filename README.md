@@ -21,9 +21,10 @@ Prerequisites
 - [wiringPi](http://wiringpi.com/)
 - Raspbian (tested on this but will probably work on other distros)
 
-### Arduino
+### Hardware
 
-- An Arduino
+- 433 MHz Transmitter and Receiver modules. There are loads on Ebay.
+- Some wire to add quarter wavelength antennas to your RF modules.
 
 
 Setting up your device
