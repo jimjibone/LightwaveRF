@@ -1,6 +1,8 @@
 LightwaveRF
 ===========
 
+**Also in Go:** See [my implementation of this in Go](github.com/jimjibone/lwgo)
+
 Arduino/Raspberry Pi library for communicating with LightwaveRF devices via 433 MHz.
 
 Please see the original [README.md](https://github.com/roberttidey/LightwaveRF) for original history of this project.
